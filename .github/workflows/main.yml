@@ -1,4 +1,4 @@
-name: Create
+name: Create ContApp
 
 on:
   workflow_dispatch:
