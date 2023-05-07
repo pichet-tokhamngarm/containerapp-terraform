@@ -20,7 +20,6 @@ terraform {
 }
 
 provider "azapi" {
-  tls_insecure = true
 }
 
 data "azurerm_client_config" "current" {}
