@@ -67,7 +67,6 @@ jobs:
         password: ${{ secrets.REGISTRY_PASSWORD }}
 
     - name: Build image and push it to ACR
-      if: github.ref == 'refs/heads/main'
       uses: ./actions/docker-build-push
       with:
         push: true
