@@ -8,7 +8,7 @@ data "azurerm_log_analytics_workspace" "la" {
 }
 
 data "azurerm_container_registry" "acr" {
-  name                = replace("${var.name}acr", "-", "")
+  name                = replace("${var.app_name}acr", "-", "")
   resource_group_name = data.azurerm_resource_group.rg.name
 }
 
