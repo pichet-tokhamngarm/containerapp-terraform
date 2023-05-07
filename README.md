@@ -6,4 +6,4 @@
 - Reviewing monitoring and alerting using Application & Container Insights
 
 # Deployment Overview
-![](workflows.png)
+![](Workflows.png)
