@@ -1,0 +1,46 @@
+name: Destroy
+
+on:
+  workflow_dispatch:
+
+jobs:
+  terraform:
+    name: 'Terraform Destroy'
+    env:
+      NODE_EXTRA_CA_CERTS: '/etc/ssl/certs/ca-certificates.crt'
+      ARM_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
+      TF_VERSION: 1.4.6
+    runs-on: ${{ github.event.pull_request.merged && fromJSON('self-hosted-dev') || 'ubuntu-20.04' }}
+    # environment: production
+ 
+    # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
+    defaults:
+      run:
+        shell: bash
+ 
+    steps:
+    - name: Cleaning Repository
+      run: |
+        sudo chown -R $USER:$USER $GITHUB_WORKSPACE
+
+    # Checkout the repository to the GitHub Actions runner      
+    - name: Checkout
+      uses: actions/checkout@v2
+ 
+    - name: 'Terraform Destroy Containerapp'
+      uses: ./actions/terraform
+      with:
+        tf_actions_version: ${{ env.TF_VERSION }}
+        tf_actions_subcommand: 'destroy'
+        tf_actions_working_dir: "./terraform/containerapp"
+
+    - name: 'Terraform Destroy Base'
+      if: github.ref == 'refs/heads/main'
+      uses: ./actions/terraform
+      with:
+        tf_actions_version: ${{ env.TF_VERSION }}
+        tf_actions_subcommand: 'destroy'
+        tf_actions_working_dir: "./terraform/base"        

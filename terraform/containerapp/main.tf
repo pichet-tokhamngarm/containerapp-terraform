@@ -33,7 +33,7 @@ resource "azapi_resource" "containerapp_environment" {
 
 resource "azurerm_user_assigned_identity" "containerapp" {
   location            = data.azurerm_resource_group.rg.location
-  name                = "containerappmi"
+  name                = "${var.app_name}containermi"
   resource_group_name = data.azurerm_resource_group.rg.name
 }
 
@@ -48,7 +48,7 @@ resource "azurerm_role_assignment" "containerapp" {
 
 resource "azapi_resource" "containerappmi" {
   type      = "Microsoft.App/containerapps@2022-03-01"
-  name      = "${var.app_name}containermi"
+  name      = "${var.app_name}containerapps"
   parent_id = data.azurerm_resource_group.rg.id
   location  = data.azurerm_resource_group.rg.location
 
