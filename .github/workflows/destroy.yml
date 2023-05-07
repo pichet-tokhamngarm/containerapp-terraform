@@ -54,7 +54,7 @@ jobs:
         tf_actions_working_dir: "./terraform/base"
 
     - name: 'Terraform Destroy Base'
-      if: github.ref == 'refs/heads/main'
+      if: github.ref == 'refs/heads/master'
       uses: ./actions/terraform
       with:
         tf_actions_version: ${{ env.TF_VERSION }}
