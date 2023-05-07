@@ -29,13 +29,28 @@ jobs:
     # Checkout the repository to the GitHub Actions runner      
     - name: Checkout
       uses: actions/checkout@v2
+
+    - name: 'Terraform Init ACA'
+      uses: ./actions/terraform
+      with:
+        tf_actions_version: ${{ env.TF_VERSION }}
+        tf_actions_subcommand: 'init'
+        tf_actions_working_dir: "./terraform/containerapp"
+        args: '-var="GITHUB_SHA=${{ github.sha }}"'
  
-    - name: 'Terraform Destroy Containerapp'
+    - name: 'Terraform Destroy ACA'
       uses: ./actions/terraform
       with:
         tf_actions_version: ${{ env.TF_VERSION }}
         tf_actions_subcommand: 'destroy'
         tf_actions_working_dir: "./terraform/containerapp"
+
+    - name: 'Terraform Init Base'
+      uses: ./actions/terraform
+      with:
+        tf_actions_version: ${{ env.TF_VERSION }}
+        tf_actions_subcommand: 'init'
+        tf_actions_working_dir: "./terraform/base"
 
     - name: 'Terraform Destroy Base'
       if: github.ref == 'refs/heads/main'
