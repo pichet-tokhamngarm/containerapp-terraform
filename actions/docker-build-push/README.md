@@ -9,9 +9,6 @@
 GitHub Action to build and push Docker images with [Buildx](https://github.com/docker/buildx) with full support of the
 features provided by [Moby BuildKit](https://github.com/moby/buildkit) builder toolkit. This includes multi-platform
 build, secrets, remote cache, etc. and different builder deployment/namespacing options.
-
-![Screenshot](.github/build-push-action.png)
-
 ___
 
 * [Usage](#usage)

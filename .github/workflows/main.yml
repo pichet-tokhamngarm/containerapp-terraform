@@ -52,7 +52,7 @@ jobs:
         tf_actions_working_dir: "./terraform/base"
  
     - name: 'Terraform Apply Base'
-      if: github.ref == 'refs/heads/main'
+      if: github.ref == 'refs/heads/master'
       uses: ./actions/terraform
       with:
         tf_actions_version: ${{ env.TF_VERSION }}
@@ -66,12 +66,13 @@ jobs:
         username: ${{ secrets.REGISTRY_USERNAME }}
         password: ${{ secrets.REGISTRY_PASSWORD }}
 
-    # - name: Build image and push it to ACR
-    #   uses: ./actions/docker-build-push
-    #   with:
-    #     push: true
-    #     tags: ${{ secrets.REGISTRY_LOGIN_SERVER }}/aspcoresample:${{ github.sha }}
-    #     file: aspnet-core-dotnet-core/Dockerfile
+    - name: Build image and push it to ACR
+      if: github.ref == 'refs/heads/main'
+      uses: ./actions/docker-build-push
+      with:
+        push: true
+        tags: ${{ secrets.REGISTRY_LOGIN_SERVER }}/aspcoresample:${{ github.sha }}
+        file: aspnet-core-dotnet-core/Dockerfile
 
     # Apply the Azure Container environment and App.
     - name: 'Terraform Format ACA'
@@ -98,7 +99,7 @@ jobs:
         args: '-var="GITHUB_SHA=${{ github.sha }}"'
  
     - name: 'Terraform Apply ACA'
-      if: github.ref == 'refs/heads/main'
+      if: github.ref == 'refs/heads/master'
       uses: ./actions/terraform
       with:
         tf_actions_version: ${{ env.TF_VERSION }}
