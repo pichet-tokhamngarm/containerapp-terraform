@@ -1,0 +1,107 @@
+name: CI
+
+on:
+  workflow_dispatch:
+
+jobs:
+  terraform:
+    name: 'Terraform'
+    env:
+      NODE_EXTRA_CA_CERTS: '/etc/ssl/certs/ca-certificates.crt'
+      ARM_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
+      TF_VERSION: 1.4.6
+    runs-on: ${{ github.event.pull_request.merged && fromJSON('self-hosted-dev') || 'ubuntu-20.04' }}
+    # environment: production
+ 
+    # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
+    defaults:
+      run:
+        shell: bash
+ 
+    steps:
+    - name: Cleaning Repository
+      run: |
+        sudo chown -R $USER:$USER $GITHUB_WORKSPACE
+
+    # Checkout the repository to the GitHub Actions runner      
+    - name: Checkout
+      uses: actions/checkout@v2
+ 
+    - name: 'Terraform Format Base'
+      uses: ./actions/terraform
+      with:
+        tf_actions_version: ${{ env.TF_VERSION }}
+        tf_actions_subcommand: 'fmt'
+        tf_actions_working_dir: "./terraform/base"
+         
+    - name: 'Terraform Init Base'
+      uses: ./actions/terraform
+      with:
+        tf_actions_version: ${{ env.TF_VERSION }}
+        tf_actions_subcommand: 'init'
+        tf_actions_working_dir: "./terraform/base"
+ 
+    - name: 'Terraform Plan Base'
+      uses: ./actions/terraform
+      with:
+        tf_actions_version: ${{ env.TF_VERSION }}
+        tf_actions_subcommand: 'plan'
+        tf_actions_working_dir: "./terraform/base"
+ 
+    - name: 'Terraform Apply Base'
+      if: github.ref == 'refs/heads/main'
+      uses: ./actions/terraform
+      with:
+        tf_actions_version: ${{ env.TF_VERSION }}
+        tf_actions_subcommand: 'apply'
+        tf_actions_working_dir: "./terraform/base"
+
+    - name: Login to ACR
+      uses: ./actions/docker-login
+      with:
+        registry: ${{ secrets.REGISTRY_LOGIN_SERVER }}
+        username: ${{ secrets.REGISTRY_USERNAME }}
+        password: ${{ secrets.REGISTRY_PASSWORD }}
+
+    # - name: Build image and push it to ACR
+    #   uses: ./actions/docker-build-push
+    #   with:
+    #     push: true
+    #     tags: ${{ secrets.REGISTRY_LOGIN_SERVER }}/aspcoresample:${{ github.sha }}
+    #     file: aspnet-core-dotnet-core/Dockerfile
+
+    # Apply the Azure Container environment and App.
+    - name: 'Terraform Format ACA'
+      uses: ./actions/terraform
+      with:
+        tf_actions_version: ${{ env.TF_VERSION }}
+        tf_actions_subcommand: 'fmt'
+        tf_actions_working_dir: "./terraform/containerapp"
+         
+    - name: 'Terraform Init ACA'
+      uses: ./actions/terraform
+      with:
+        tf_actions_version: ${{ env.TF_VERSION }}
+        tf_actions_subcommand: 'init'
+        tf_actions_working_dir: "./terraform/containerapp"
+        args: '-var="GITHUB_SHA=${{ github.sha }}"'
+
+    - name: 'Terraform Plan ACA'
+      uses: ./actions/terraform
+      with:
+        tf_actions_version: ${{ env.TF_VERSION }}
+        tf_actions_subcommand: 'plan'
+        tf_actions_working_dir: "./terraform/containerapp"
+        args: '-var="GITHUB_SHA=${{ github.sha }}"'
+ 
+    - name: 'Terraform Apply ACA'
+      if: github.ref == 'refs/heads/main'
+      uses: ./actions/terraform
+      with:
+        tf_actions_version: ${{ env.TF_VERSION }}
+        tf_actions_subcommand: 'apply'
+        tf_actions_working_dir: "./terraform/containerapp"
+        args: '-var="GITHUB_SHA=${{ github.sha }}"'
