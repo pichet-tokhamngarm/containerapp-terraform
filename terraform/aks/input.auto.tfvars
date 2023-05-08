@@ -1,4 +1,4 @@
-aks_vnet_name = "aksvnet"
+aks_vnet_name = "aksaksdataxdevops01vnet"
 
 sshkvsecret = "aksdataxdevops01pubkey"
 

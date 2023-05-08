@@ -38,7 +38,6 @@ jobs:
         tf_actions_working_dir: "./terraform/aks"
  
     - name: 'Terraform Destroy AKS'
-      if: github.ref == 'refs/heads/main'
       uses: ./actions/terraform
       with:
         tf_actions_version: ${{ env.TF_VERSION }}
