@@ -2,25 +2,33 @@ name: Clean Up
 
 on:
   workflow_dispatch:
+    inputs:
+      deployLevel:
+        description: 'Deployment level'
+        required: true
+        default: 'Plan'
+        type: choice
+        options:
+          - Plan
+          - Apply
+          env:
+            NODE_EXTRA_CA_CERTS: '/etc/ssl/certs/ca-certificates.crt'
+            ARM_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
+            ARM_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
+            ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+            ARM_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
+            TF_VERSION: 1.4.6
+          
+          # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
+          defaults:
+            run:
+              shell: bash
 
 jobs:
-  terraform:
-    name: 'Terraform Destroy'
-    env:
-      NODE_EXTRA_CA_CERTS: '/etc/ssl/certs/ca-certificates.crt'
-      ARM_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
-      ARM_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
-      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      ARM_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
-      TF_VERSION: 1.4.6
-    runs-on: ${{ github.event.pull_request.merged && fromJSON('self-hosted-dev') || 'ubuntu-20.04' }}
-    # environment: production
- 
-    # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
-    defaults:
-      run:
-        shell: bash
- 
+  aksRemove:
+    name: 'Remove AKS'
+    runs-on: ${{ github.ref == 'refs/heads/main' && fromJSON('self-hosted-dev') || 'ubuntu-20.04' }}    # environment: production
+
     steps:
     - name: Cleaning Repository
       run: |
@@ -36,13 +44,29 @@ jobs:
         tf_actions_version: ${{ env.TF_VERSION }}
         tf_actions_subcommand: 'init'
         tf_actions_working_dir: "./terraform/aks"
+
+    - name: 'Terraform Plan'
+      uses: ./actions/terraform
+      with:
+        tf_actions_version: ${{ env.TF_VERSION }}
+        tf_actions_subcommand: 'plan'
+        tf_actions_working_dir: "./terraform/aks"
  
     - name: 'Terraform Destroy AKS'
+      if: ${{ github.event.inputs.deployLevel == 'Apply' }}
       uses: ./actions/terraform
       with:
         tf_actions_version: ${{ env.TF_VERSION }}
         tf_actions_subcommand: 'destroy'
         tf_actions_working_dir: "./terraform/aks"
+
+  acaRemove:
+    name: 'Remove ACA'
+    runs-on: ${{ github.ref == 'refs/heads/main' && fromJSON('self-hosted-dev') || 'ubuntu-20.04' }}    # environment: production
+
+    steps:    
+    - name: Checkout
+      uses: actions/checkout@v2
 
     # REMOVE ACA
     - name: 'Terraform Init ACA'
@@ -52,15 +76,30 @@ jobs:
         tf_actions_subcommand: 'init'
         tf_actions_working_dir: "./terraform/containerapp"
         args: '-var="GITHUB_SHA=${{ github.sha }}"'
+
+    - name: 'Terraform Plan'
+      uses: ./actions/terraform
+      with:
+        tf_actions_version: ${{ env.TF_VERSION }}
+        tf_actions_subcommand: 'plan'
+        tf_actions_working_dir: "./terraform/containerapp"
  
     - name: 'Terraform Destroy ACA'
-      if: github.ref == 'refs/heads/master'
+      if: ${{ github.event.inputs.deployLevel == 'Apply' }}
       uses: ./actions/terraform
       with:
         tf_actions_version: ${{ env.TF_VERSION }}
         tf_actions_subcommand: 'destroy'
         tf_actions_working_dir: "./terraform/containerapp"
         args: '-var="GITHUB_SHA=${{ github.sha }}"'
+
+  baseRemove:
+    name: 'Remove Base'
+    runs-on: ${{ github.ref == 'refs/heads/main' && fromJSON('self-hosted-dev') || 'ubuntu-20.04' }}    # environment: production
+
+    steps:    
+    - name: Checkout
+      uses: actions/checkout@v2
 
     # REMOVE BASE
     - name: 'Terraform Init Base'
@@ -70,8 +109,15 @@ jobs:
         tf_actions_subcommand: 'init'
         tf_actions_working_dir: "./terraform/base"
 
+    - name: 'Terraform Plan'
+      uses: ./actions/terraform
+      with:
+        tf_actions_version: ${{ env.TF_VERSION }}
+        tf_actions_subcommand: 'plan'
+        tf_actions_working_dir: "./terraform/base"
+
     - name: 'Terraform Destroy Base'
-      if: github.ref == 'refs/heads/main'
+      if: ${{ github.event.inputs.deployLevel == 'Apply' }}
       uses: ./actions/terraform
       with:
         tf_actions_version: ${{ env.TF_VERSION }}
