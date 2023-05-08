@@ -30,14 +30,14 @@ jobs:
       uses: actions/checkout@v2
 
     # REMOVE AKS
-    - name: 'Terraform Init ACA'
+    - name: 'Terraform Init AKS'
       uses: ./actions/terraform
       with:
         tf_actions_version: ${{ env.TF_VERSION }}
         tf_actions_subcommand: 'init'
         tf_actions_working_dir: "./terraform/aks"
  
-    - name: 'Terraform Destroy ACA'
+    - name: 'Terraform Destroy AKS'
       if: github.ref == 'refs/heads/main'
       uses: ./actions/terraform
       with:
@@ -55,6 +55,7 @@ jobs:
         args: '-var="GITHUB_SHA=${{ github.sha }}"'
  
     - name: 'Terraform Destroy ACA'
+      if: github.ref == 'refs/heads/main'
       uses: ./actions/terraform
       with:
         tf_actions_version: ${{ env.TF_VERSION }}
