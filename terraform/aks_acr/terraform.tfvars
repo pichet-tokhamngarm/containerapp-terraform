@@ -3,4 +3,4 @@ location            = "southeastasia"
 cluster_name        = "dataxdevops01-aks"
 kubernetes_version  = "1.25.5"
 system_node_count   = 3
-acr_name            = "demotf001acr"
+acr_name            = "dataxdevops01acr"
