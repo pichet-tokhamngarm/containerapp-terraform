@@ -15,3 +15,8 @@ These will deploy using Terraform:
 - Azure Managed Identity
 - Azure IAM to allow the Managed Identity `acrpull` permissions from the ACR previously created
 - Azure Container App with Managed Identity and deploy application into Container App
+
+# Deploy AKS Cluster using Terraform
+
+This will deploy using Terraform:
+- Azure Kubernetes Service ([AKS](aks/))
