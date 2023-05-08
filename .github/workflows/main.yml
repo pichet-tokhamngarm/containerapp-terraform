@@ -2,6 +2,15 @@ name: Create ContApp
 
 on:
   workflow_dispatch:
+    inputs:
+        deployLevel:
+          description: 'Deployment level'
+          required: true
+          default: 'Plan'
+          type: choice
+          options:
+            - Plan
+            - Apply
 
 env:
   NODE_EXTRA_CA_CERTS: '/etc/ssl/certs/ca-certificates.crt'
@@ -53,7 +62,7 @@ jobs:
         tf_actions_working_dir: "./terraform/base"
  
     - name: 'Terraform Apply Base'
-      if: github.ref == 'refs/heads/master'
+      if: ${{ github.event.inputs.deployLevel == 'Apply' }}
       uses: ./actions/terraform
       with:
         tf_actions_version: ${{ env.TF_VERSION }}
@@ -83,6 +92,9 @@ jobs:
     
     steps:
     # Apply the Azure Container environment and App.
+    - name: Checkout
+      uses: actions/checkout@v2
+
     - name: 'Terraform Format ACA'
       uses: ./actions/terraform
       with:
@@ -107,7 +119,7 @@ jobs:
         args: '-var="GITHUB_SHA=${{ github.sha }}"'
  
     - name: 'Terraform Apply ACA'
-      if: github.ref == 'refs/heads/master'
+      if: ${{ github.event.inputs.deployLevel == 'Apply' }}
       uses: ./actions/terraform
       with:
         tf_actions_version: ${{ env.TF_VERSION }}
@@ -148,7 +160,7 @@ jobs:
         tf_actions_working_dir: "./terraform/aks"
  
     - name: 'Terraform Apply Base'
-      if: github.ref == 'refs/heads/master'
+      if: ${{ github.event.inputs.deployLevel == 'Apply' }}
       uses: ./actions/terraform
       with:
         tf_actions_version: ${{ env.TF_VERSION }}
