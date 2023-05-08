@@ -1,4 +1,4 @@
-# Deploy Terraform Base
+# Deploy Base Infrastructure
 
 The first part of deploying terraform, known as [base](base/) it will deploy:
 - Resource Group
@@ -6,7 +6,7 @@ The first part of deploying terraform, known as [base](base/) it will deploy:
 - Log Analytics
 - Application Insights 
 
-# Deploy Container App using Terraform
+# Deploy Container App 
 
 Now that the test application has been built and deployed into ACR, time to deploying the [container app](containerapp/) with image built on previous stage.
 
@@ -16,7 +16,8 @@ These will deploy using Terraform:
 - Azure IAM to allow the Managed Identity `acrpull` permissions from the ACR previously created
 - Azure Container App with Managed Identity and deploy application into Container App
 
-# Deploy AKS Cluster using Terraform
+# To Deploy AKS Cluster 
 
-This will deploy using Terraform:
 - Azure Kubernetes Service ([AKS](aks/))
+- Execute [kube-prep-steps](kube-prep-steps.ps1) to create Azure Keyvault for AKS Cluster that will create.
+- Run [AKS GitHub Workflow](../../.github/workflows/aks.yml).

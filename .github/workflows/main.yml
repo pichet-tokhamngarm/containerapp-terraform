@@ -3,30 +3,31 @@ name: Create ContApp
 on:
   workflow_dispatch:
 
+env:
+  NODE_EXTRA_CA_CERTS: '/etc/ssl/certs/ca-certificates.crt'
+  ARM_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
+  ARM_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  ARM_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
+  TF_VERSION: 1.4.6
+
+# Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
+defaults:
+  run:
+    shell: bash
+
 jobs:
-  terraform:
-    name: 'Terraform'
-    env:
-      NODE_EXTRA_CA_CERTS: '/etc/ssl/certs/ca-certificates.crt'
-      ARM_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
-      ARM_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
-      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      ARM_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
-      TF_VERSION: 1.4.6
-    runs-on: ${{ github.event.pull_request.merged && fromJSON('self-hosted-dev') || 'ubuntu-20.04' }}
+  base_provision:
+    name: 'Provision Base'
+    runs-on: ${{ github.ref == 'refs/heads/main' && fromJSON('self-hosted-dev') || 'ubuntu-20.04' }}
     # environment: production
- 
-    # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
-    defaults:
-      run:
-        shell: bash
  
     steps:
     - name: Cleaning Repository
       run: |
         sudo chown -R $USER:$USER $GITHUB_WORKSPACE
 
-    # Checkout the repository to the GitHub Actions runner      
+    # Provision Base Infrastructure      
     - name: Checkout
       uses: actions/checkout@v2
  
@@ -59,8 +60,7 @@ jobs:
         tf_actions_subcommand: 'apply'
         tf_actions_working_dir: "./terraform/base"
 
-    # Workflow always fail here for 1st run as password changed
-    # Please update GitHub password secret 
+    # Workflow always fail here when password changed
     - name: Login to ACR
       uses: ./actions/docker-login
       with:
@@ -75,6 +75,13 @@ jobs:
         tags: ${{ secrets.REGISTRY_LOGIN_SERVER }}/aspcoresample:${{ github.sha }}
         file: aspnet-core-dotnet-core/Dockerfile
 
+  aca_provision:
+    name: Provision ACA
+    if: ${{ always() }}
+    needs: [base_provision]
+    runs-on: ${{ github.ref == 'refs/heads/main' && fromJSON('self-hosted-dev') || 'ubuntu-20.04' }}
+    
+    steps:
     # Apply the Azure Container environment and App.
     - name: 'Terraform Format ACA'
       uses: ./actions/terraform
@@ -107,3 +114,43 @@ jobs:
         tf_actions_subcommand: 'apply'
         tf_actions_working_dir: "./terraform/containerapp"
         args: '-var="GITHUB_SHA=${{ github.sha }}"'
+
+  aks_provision:
+    name: Provision AKS
+    if: ${{ always() }}
+    needs: [base_provision]
+    runs-on: ${{ github.ref == 'refs/heads/main' && fromJSON('self-hosted-dev') || 'ubuntu-20.04' }}
+    
+    steps:
+    # Create AKS Cluster      
+    - name: Checkout
+      uses: actions/checkout@v2
+ 
+    - name: 'Terraform Format Base'
+      uses: ./actions/terraform
+      with:
+        tf_actions_version: ${{ env.TF_VERSION }}
+        tf_actions_subcommand: 'fmt'
+        tf_actions_working_dir: "./terraform/aks"
+         
+    - name: 'Terraform Init Base'
+      uses: ./actions/terraform
+      with:
+        tf_actions_version: ${{ env.TF_VERSION }}
+        tf_actions_subcommand: 'init'
+        tf_actions_working_dir: "./terraform/aks"
+ 
+    - name: 'Terraform Plan Base'
+      uses: ./actions/terraform
+      with:
+        tf_actions_version: ${{ env.TF_VERSION }}
+        tf_actions_subcommand: 'plan'
+        tf_actions_working_dir: "./terraform/aks"
+ 
+    - name: 'Terraform Apply Base'
+      if: github.ref == 'refs/heads/master'
+      uses: ./actions/terraform
+      with:
+        tf_actions_version: ${{ env.TF_VERSION }}
+        tf_actions_subcommand: 'apply'
+        tf_actions_working_dir: "./terraform/aks"
