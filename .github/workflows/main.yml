@@ -1,4 +1,4 @@
-name: Create ContApp
+name: Provision Environment
 
 on:
   workflow_dispatch:
