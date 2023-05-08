@@ -32,7 +32,7 @@ resource "azurerm_subnet" "aks_subnet" {
 }
 
 
-resource "azurerm_resource_group" "aks_rg" {
+data "azurerm_resource_group" "aks_rg" {
   name     = var.resource_group
   location = var.azure_region
 }
