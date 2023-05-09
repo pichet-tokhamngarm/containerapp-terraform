@@ -97,6 +97,8 @@ jobs:
 
   baseRemove:
     name: 'Remove Base'
+    if: ${{ always() }}
+    needs: [aksRemove,acaRemove]
     runs-on: ${{ github.ref == 'refs/heads/main' && fromJSON('self-hosted-dev') || 'ubuntu-20.04' }}    # environment: production
 
     steps:    
